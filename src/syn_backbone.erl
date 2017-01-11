@@ -40,22 +40,26 @@
 initdb() ->
     %% ensure all nodes are added
     ClusterNodes = [node() | nodes()],
-    mnesia:change_config(extra_db_nodes, ClusterNodes),
-    %% create tables
-    create_table(syn_registry_table, [
-        {type, set},
-        {ram_copies, ClusterNodes},
-        {attributes, record_info(fields, syn_registry_table)},
-        {index, [#syn_registry_table.pid]},
-        {storage_properties, [{ets, [{read_concurrency, true}]}]}
-    ]),
-    create_table(syn_groups_table, [
-        {type, bag},
-        {ram_copies, ClusterNodes},
-        {attributes, record_info(fields, syn_groups_table)},
-        {index, [#syn_groups_table.pid]},
-        {storage_properties, [{ets, [{read_concurrency, true}]}]}
-    ]).
+    case  mnesia:change_config(extra_db_nodes, ClusterNodes) of
+       {error, Reason} ->
+           {error, Reason};
+       _Any ->
+            %% create tables
+            create_table(syn_registry_table, [
+                {type, set},
+                {ram_copies, ClusterNodes},
+                {attributes, record_info(fields, syn_registry_table)},
+                {index, [#syn_registry_table.pid]},
+                {storage_properties, [{ets, [{read_concurrency, true}]}]}
+            ]),
+            create_table(syn_groups_table, [
+                {type, bag},
+                {ram_copies, ClusterNodes},
+                {attributes, record_info(fields, syn_groups_table)},
+                {index, [#syn_groups_table.pid]},
+                {storage_properties, [{ets, [{read_concurrency, true}]}]}
+            ])
+   end.
 
 create_table(TableName, Options) ->
     CurrentNode = node(),
